@@ -81,6 +81,11 @@ type ModifyRequest struct {
 	Command  string
 }
 
+type ExportRequest struct {
+	Name     string
+	Password string
+}
+
 // These structures map the JSON responses that will be sent from the API
 
 type ResponseData struct {
@@ -365,4 +370,28 @@ func Modify(jsonIn []byte) ([]byte, error) {
 	} else {
 		return jsonStatusOk()
 	}
+}
+
+// Export returns a backed up vault.
+func Export(jsonIn []byte) ([]byte, error) {
+	var req ExportRequest
+	err := json.Unmarshal(jsonIn, &req)
+	if err != nil {
+		log.Println("Error unmarshaling input:", err)
+		return jsonStatusError(err)
+	}
+
+	err = validateAdmin(req.Name, req.Password)
+	if err != nil {
+		log.Println("Unauthorized attempt to export disk records")
+		return jsonStatusError(err)
+	}
+
+	out, err := json.Marshal(records)
+	if err != nil {
+		log.Println("Error exporting vault:", err)
+		return jsonStatusError(err)
+	}
+
+	return jsonResponse(out)
 }
